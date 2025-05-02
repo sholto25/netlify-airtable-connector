@@ -1,0 +1,25 @@
+{
+  "name": "netlify-airtable-connector",
+  "version": "1.0.0",
+  "description": "Serverless functions to connect Webflow to Airtable",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build step required'",
+    "start": "netlify dev"
+  },
+  "keywords": [
+    "netlify",
+    "airtable",
+    "webflow",
+    "serverless"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "airtable": "^0.12.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.9.1"
+  }
+}
