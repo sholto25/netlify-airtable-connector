@@ -15,6 +15,18 @@ const headers = {
 };
 
 exports.handler = async (event, context) => {
+  // Log request details for debugging
+  console.log('Request details:', {
+    path: event.path,
+    httpMethod: event.httpMethod,
+    queryParams: event.queryStringParameters,
+    envVars: {
+      baseId: process.env.AIRTABLE_BASE_ID ? 'Set' : 'Not set',
+      tableName: process.env.AIRTABLE_TABLE_NAME ? 'Set' : 'Not set',
+      apiKey: process.env.AIRTABLE_API_KEY ? 'Set (value hidden)' : 'Not set'
+    }
+  });
+
   // Handle preflight OPTIONS request
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -35,24 +47,32 @@ exports.handler = async (event, context) => {
 
   try {
     // Get table name from environment variable or query parameter
-    const tableName = event.queryStringParameters.table || process.env.AIRTABLE_TABLE_NAME;
+    const tableName = event.queryStringParameters?.table || process.env.AIRTABLE_TABLE_NAME;
+    
+    console.log('Attempting to fetch from table:', tableName);
     
     if (!tableName) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Table name is required' }),
+        body: JSON.stringify({ 
+          error: 'Table name is required',
+          message: 'Please set AIRTABLE_TABLE_NAME environment variable or provide table query parameter'
+        }),
       };
     }
 
     // Fetch records from Airtable
+    console.log('Fetching records from Airtable...');
     const records = await base(tableName)
       .select({
         // You can add view, filterByFormula, etc. here
         // Example: view: 'Grid view',
-        // Example: maxRecords: 100,
+        maxRecords: 10, // Limit to 10 records for testing
       })
       .all();
+    
+    console.log(`Successfully fetched ${records.length} records`);
     
     // Transform records to a simpler format
     const formattedRecords = records.map(record => ({
@@ -66,12 +86,22 @@ exports.handler = async (event, context) => {
       body: JSON.stringify(formattedRecords),
     };
   } catch (error) {
-    console.error('Error fetching from Airtable:', error);
+    console.error('Detailed Airtable error:', error.message);
+    console.error('Error stack:', error.stack);
     
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Failed to fetch data from Airtable' }),
+      body: JSON.stringify({ 
+        error: 'Failed to fetch data from Airtable',
+        message: error.message,
+        details: {
+          tableName: process.env.AIRTABLE_TABLE_NAME || 'Table name not set',
+          baseId: process.env.AIRTABLE_BASE_ID || 'Base ID not set',
+          // Don't include actual API key for security reasons
+          apiKeyExists: !!process.env.AIRTABLE_API_KEY
+        }
+      }),
     };
   }
 };
